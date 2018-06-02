@@ -8,8 +8,37 @@ import (
 	"github.com/mkideal/cli"
 )
 
+// New new blade application
 func New() *cli.Command {
-	return new_
+	return &cli.Command{
+		Name:        "new",
+		Desc:        "create blade application by template",
+		Text:        `    blade new <name>`,
+		Argv:        func() interface{} { return new(newT) },
+		CanSubRoute: true,
+		Fn: func(ctx *cli.Context) error {
+			argv := ctx.Argv().(*newT)
+			argv.Version = "0.0.1"
+
+			prompt := &survey.Input{
+				Message: "please input package name (e.g: com.bladejava.example):",
+			}
+			survey.AskOne(prompt, &argv.PackageName, nil)
+
+			if argv.PackageName == "" {
+				argv.PackageName = "com.bladejava.example"
+			}
+			fmt.Println("")
+
+			aa := &survey.Select{
+				Message: "choose a build tool:",
+				Options: []string{"Maven", "Gradle"},
+			}
+			survey.AskOne(aa, &argv.BuildTool, nil)
+			fmt.Println("")
+			return templates.New(argv.BuildTool, ctx, argv.BaseConfig)
+		},
+	}
 }
 
 type newT struct {
@@ -29,34 +58,4 @@ func (t *newT) Validate(ctx *cli.Context) error {
 	}
 	t.Name = ctx.Args()[0]
 	return nil
-}
-
-var new_ = &cli.Command{
-	Name:        "new",
-	Desc:        "create blade application by template",
-	Text:        `    blade new <name>`,
-	Argv:        func() interface{} { return new(newT) },
-	CanSubRoute: true,
-	Fn: func(ctx *cli.Context) error {
-		argv := ctx.Argv().(*newT)
-		argv.Version = "0.0.1"
-
-		prompt := &survey.Input{
-			Message: "please input package name (e.g: com.bladejava.example):",
-		}
-		survey.AskOne(prompt, &argv.PackageName, nil)
-
-		if argv.PackageName == "" {
-			argv.PackageName = "com.bladejava.example"
-		}
-		fmt.Println("")
-
-		aa := &survey.Select{
-			Message: "choose a build tool:",
-			Options: []string{"Maven", "Gradle"},
-		}
-		survey.AskOne(aa, &argv.BuildTool, nil)
-		fmt.Println("")
-		return templates.New(argv.BuildTool, ctx, argv.BaseConfig)
-	},
 }

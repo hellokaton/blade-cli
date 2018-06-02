@@ -18,10 +18,30 @@ import (
 	"github.com/mkideal/cli"
 )
 
+// Serve run blade application
 func Serve() *cli.Command {
-	return serve_
+	return &cli.Command{
+		Name:        "serve",
+		Desc:        "start blade application",
+		CanSubRoute: true,
+		Fn: func(ctx *cli.Context) error {
+			e, err := NewEngine()
+			if err != nil {
+				return err
+			}
+			sigs := make(chan os.Signal, 1)
+			signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+			go func() {
+				<-sigs
+				e.Stop()
+			}()
+			e.Run()
+			return nil
+		},
+	}
 }
 
+// Engine blade serve engine
 type Engine struct {
 	config  *templates.BladeConf
 	watcher *fsnotify.Watcher
@@ -65,27 +85,6 @@ func NewEngine() (*Engine, error) {
 		binRunning:     false,
 		watchers:       0,
 	}, nil
-}
-
-var serve_ = &cli.Command{
-	Name:        "serve",
-	Desc:        "start blade application",
-	CanSubRoute: true,
-
-	Fn: func(ctx *cli.Context) error {
-		e, err := NewEngine()
-		if err != nil {
-			return err
-		}
-		sigs := make(chan os.Signal, 1)
-		signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
-		go func() {
-			<-sigs
-			e.Stop()
-		}()
-		e.Run()
-		return nil
-	},
 }
 
 // Run run run
