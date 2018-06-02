@@ -1,8 +1,13 @@
 package api
 
 import (
+	"errors"
 	"fmt"
+	"io"
+	"io/ioutil"
+	"os"
 
+	"github.com/biezhi/blade-cli/blade/utils"
 	"github.com/mkideal/cli"
 )
 
@@ -12,33 +17,32 @@ func Build() *cli.Command {
 
 type buildT struct {
 	cli.Helper
-	Name string `cli:"-"`
-}
-
-func (t *buildT) Validate(ctx *cli.Context) error {
-	clr := ctx.Color()
-	b := clr.Bold
-	if len(ctx.Args()) == 0 || ctx.Args()[0] == "" {
-		return fmt.Errorf("application %s is empty", b("name"))
-	}
-	if len(ctx.Args()) > 1 {
-		return fmt.Errorf("too many args for %s", b("name"))
-	}
-	t.Name = ctx.Args()[0]
-	return nil
 }
 
 var build_ = &cli.Command{
 	Name:        "build",
 	Desc:        "build application as jar or dir",
-	Text:        `    blade build [name]`,
-	Argv:        func() interface{} { return new(newT) },
+	Text:        `    blade build`,
+	Argv:        func() interface{} { return new(buildT) },
 	CanSubRoute: true,
 
 	Fn: func(ctx *cli.Context) error {
-		// argv := ctx.Argv().(*newT)
+		cmd, stdout, stderr, err := utils.StartCmd("mvn clean package")
+		if err != nil {
+			return err
+		}
 
+		io.Copy(os.Stdout, stdout)
+		errMsg, err := ioutil.ReadAll(stderr)
+		if err != nil {
+			return err
+		}
+		// wait for building
+		err = cmd.Wait()
+		if err != nil {
+			e := fmt.Sprintf("stderr: %s, cmd err: %s", string(errMsg), err)
+			return errors.New(e)
+		}
 		return nil
-		// return templates.New(argv.Type, ctx, nil)
 	},
 }
