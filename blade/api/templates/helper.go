@@ -135,6 +135,7 @@ func WriteCommon(cfg *BaseConfig) {
 	appProperties := appDir + "/src/main/resources/app.properties"
 
 	os.MkdirAll(packagePath, os.ModePerm)
+	os.MkdirAll(configPath, os.ModePerm)
 	os.MkdirAll(controllerPath, os.ModePerm)
 	os.MkdirAll(appDir+"/src/test/java", os.ModePerm)
 	os.MkdirAll(appDir+"/src/main/resources/static", os.ModePerm)

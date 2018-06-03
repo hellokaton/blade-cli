@@ -8,7 +8,7 @@ const TplPom = `<?xml version="1.0" encoding="UTF-8"?>
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>{{ .PackageName }}</groupId>
-    <artifactId>{{ .AppName }}</artifactId>
+    <artifactId>{{ .Name }}</artifactId>
     <version>{{ .Version }}</version>
 
     <properties>
@@ -89,7 +89,7 @@ const TplPom = `<?xml version="1.0" encoding="UTF-8"?>
     </profiles>
 
     <build>
-        <finalName>{{ .AppName }}</finalName>
+        <finalName>{{ .Name }}</finalName>
         <plugins>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -203,15 +203,16 @@ const TplBootstrap = `package {{ .PackageName }}.config;
 
 import com.blade.Blade;
 import com.blade.event.BeanProcessor;
-import com.blade.ioc.annotation.Bean;
-import com.blade.mvc.view.template.JetbrickTemplateEngine;
+import com.blade.ioc.annotation.Bean;{{if ne .TplDependency ""}}
+import com.blade.mvc.view.template.JetbrickTemplateEngine;{{end}}
 
 @Bean
 public class Bootstrap implements BeanProcessor {
     
     @Override
     public void processor(Blade blade) {
-        blade.templateEngine(new JetbrickTemplateEngine());
+        {{if ne .TplDependency ""}}
+        blade.templateEngine(new JetbrickTemplateEngine());{{end}}
     }
 
 }`
@@ -469,4 +470,4 @@ task copyResources(type: Copy) {
 task release(type: Copy, dependsOn: [build, clearJar, copyJar, copyResources])
 `
 
-const TplGradleSetting = `rootProject.name = '{{ .AppName }}'`
+const TplGradleSetting = `rootProject.name = '{{ .Name }}'`

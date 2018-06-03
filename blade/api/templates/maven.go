@@ -14,18 +14,10 @@ var _ = register("Maven", Maven)
 func Maven(ctx *cli.Context, cfg *BaseConfig) error {
 	appDir := cfg.Name
 
-	param := make(map[string]string)
-	param["BladeVersion"] = GetRepoLatestVersion("blade-mvc", "2.0.8-R1")
-	param["AppName"] = cfg.Name
-	param["PackageName"] = cfg.PackageName
-	param["Version"] = cfg.Version
-	param["BuildTool"] = "maven"
-	param["RenderType"] = cfg.RenderType
-
 	if cfg.RenderType == "Web Application" {
-		param["TplDependency"] = getMavenDependency()
+		cfg.TplDependency = getMavenDependency()
 	} else {
-		param["TplDependency"] = ""
+		cfg.TplDependency = ""
 	}
 
 	// create dir
@@ -36,7 +28,7 @@ func Maven(ctx *cli.Context, cfg *BaseConfig) error {
 	// create pom.xml
 	pomPath := appDir + "/pom.xml"
 	if flag, _ := utils.Exists(pomPath); !flag {
-		utils.WriteTemplate("tpl_pom", pomPath, TplPom, param)
+		utils.WriteTemplate("tpl_pom", pomPath, TplPom, cfg)
 		fmt.Println("\n\ncreate file success:", pomPath)
 	}
 
