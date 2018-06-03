@@ -26,7 +26,7 @@ const TplPom = `<?xml version="1.0" encoding="UTF-8"?>
             <artifactId>blade-mvc</artifactId>
             <version>${blade-mvc.version}</version>
         </dependency>
-        {{ .JetbrickDependency }}
+        {{ .TplDependency }}
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
@@ -45,6 +45,9 @@ const TplPom = `<?xml version="1.0" encoding="UTF-8"?>
     <profiles>
         <profile>
             <id>prod</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
             <build>
                 <resources>
                     <resource>
@@ -59,6 +62,9 @@ const TplPom = `<?xml version="1.0" encoding="UTF-8"?>
         </profile>
         <profile>
             <id>dev</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
             <build>
                 <resources>
                     <resource>
@@ -368,3 +374,81 @@ paket-files/
 !.vscode/launch.json
 !.vscode/extensions.json
 `
+
+const TplGradleBuild = `plugins {
+    id 'java'
+    id 'idea'
+    id 'eclipse'
+    id 'maven'
+    id 'application'
+}
+
+idea {
+    module {
+        outputDir file('build/classes/main')
+        testOutputDir file('build/classes/test')
+    }
+}
+if (project.convention.findPlugin(JavaPluginConvention)) {
+    // Change the output directory for the main and test source sets back to the old path
+    sourceSets.main.output.resourcesDir = new File(buildDir, "classes/main")
+    sourceSets.main.java.outputDir = new File(buildDir, "classes/main")
+    sourceSets.test.output.resourcesDir = new File(buildDir, "classes/test")
+    sourceSets.test.java.outputDir = new File(buildDir, "classes/test")
+}
+
+group '{{ .PackageName }}'
+version '{{ .Version }}'
+
+mainClassName = '{{ .PackageName }}.Application'
+def libPath = 'build/libs/lib'
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+tasks.withType(JavaCompile){
+    options.encoding = "UTF-8"
+}
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
+dependencies {
+    compile 'com.bladejava:blade-mvc:{{ .BladeVersion }}'
+    {{ .TplDependency }}
+    testCompile 'junit:junit:4.12'
+}
+
+jar {
+    manifest {
+        attributes 'Implementation-Title': 'Gradle'
+        attributes 'Main-Class': mainClassName
+        attributes 'Built-By': 'biezhi'
+        attributes 'Class-Path': 'resources/ ' + configurations.compile.collect { 'lib/' + it.getName() }.join(' ')
+    }
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '4.7'
+}
+
+task clearJar(type: Delete) {
+    delete libPath
+}
+
+task copyJar(type: Copy) {
+    from configurations.runtime
+    into(libPath)
+}
+
+task copyResources(type: Copy) {
+    from 'src/main/resources'
+    into('build/libs/resources')
+}
+
+task release(type: Copy, dependsOn: [build, clearJar, copyJar, copyResources])
+`
+
+const TplGradleSetting = `rootProject.name = '{{ .AppName }}'`

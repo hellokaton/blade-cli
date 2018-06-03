@@ -83,6 +83,7 @@ type BladeConf struct {
 	PackageName    string   `json:"package"`
 	AppName        string   `json:"app_name"`
 	MainClass      string   `json:"main_class"`
+	BuildTool      string   `json:"build_tool"`
 	StartDelay     uint     `json:"start_delay"`
 	Interval       uint     `json:"interval"`
 	LastModifyTime int64    `json:"last_modify_time"`
@@ -98,6 +99,7 @@ func CreateReloadConf(param map[string]string) {
 		PackageName:    param["PackageName"],
 		AppName:        param["AppName"],
 		MainClass:      param["PackageName"] + ".Application",
+		BuildTool:      param["BuildTool"],
 		StartDelay:     5,
 		Interval:       3,
 		LastModifyTime: 100,

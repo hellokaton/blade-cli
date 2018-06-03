@@ -9,10 +9,10 @@ import (
 	"github.com/mkideal/cli"
 )
 
-var _ = register("Maven", Maven)
+var _ = register("Gradle", Gradle)
 
-// Maven create maven application
-func Maven(ctx *cli.Context, cfg BaseConfig) error {
+// Gradle create gradle application
+func Gradle(ctx *cli.Context, cfg BaseConfig) error {
 	appDir := cfg.Name
 
 	param := make(map[string]string)
@@ -20,10 +20,10 @@ func Maven(ctx *cli.Context, cfg BaseConfig) error {
 	param["AppName"] = cfg.Name
 	param["PackageName"] = cfg.PackageName
 	param["Version"] = cfg.Version
-	param["BuildTool"] = "maven"
+	param["BuildTool"] = "gradle"
 
 	if cfg.RenderType == "Web Application" {
-		param["TplDependency"] = getTplDependency()
+		param["TplDependency"] = gradleTplDependency()
 	} else {
 		param["TplDependency"] = ""
 	}
@@ -33,17 +33,18 @@ func Maven(ctx *cli.Context, cfg BaseConfig) error {
 		return err
 	}
 
-	// create pom.xml
-	pomPath := appDir + "/pom.xml"
-	if flag, _ := utils.Exists(pomPath); !flag {
-		utils.WriteTemplate("tpl_pom", pomPath, TplPom, param)
-		fmt.Println("\n\ncreate file success:", pomPath)
+	// create build.gradle
+	buildPath := appDir + "/build.gradle"
+	if flag, _ := utils.Exists(buildPath); !flag {
+		utils.WriteTemplate("tpl_build_gradle", buildPath, TplGradleBuild, param)
+		fmt.Println("\n\ncreate file success:", buildPath)
 	}
 
-	packageXML := appDir + "/package.xml"
-
-	utils.WriteFile(packageXML, TplPackageXML)
-	PrintLine(packageXML)
+	settingPath := appDir + "/setting.gradle"
+	if flag, _ := utils.Exists(settingPath); !flag {
+		utils.WriteTemplate("tpl_setting_gradle", settingPath, TplGradleSetting, param)
+		PrintLine(settingPath)
+	}
 
 	CreateReloadConf(param)
 
@@ -98,10 +99,7 @@ func Maven(ctx *cli.Context, cfg BaseConfig) error {
 	return nil
 }
 
-func getTplDependency() string {
-	return `<dependency>
-			<groupId>com.bladejava</groupId>
-			<artifactId>blade-template-jetbrick</artifactId>
-			<version>` + GetRepoLatestVersion("blade-template-jetbrick", "0.1.3") + `</version>
-		</dependency>`
+func gradleTplDependency() string {
+	return `compile 'com.bladejava:blade-template-jetbrick:` + GetRepoLatestVersion("blade-template-jetbrick", "0.1.3") + `'
+	`
 }

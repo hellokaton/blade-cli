@@ -109,7 +109,7 @@ func (e *Engine) watching(root string) error {
 			if err != nil {
 				return err
 			}
-			log.Printf("watching %s", path)
+			// log.Printf("watching %s", path)
 
 			go func() {
 				e.withLock(func() {
@@ -210,7 +210,13 @@ func (e *Engine) flushEvents() {
 func (e *Engine) runBin() error {
 	var err error
 	log.Println("running...")
-	cmd, stdout, stderr, err := utils.StartCmd(`mvn compile exec:java -Dexec.mainClass="` + e.config.MainClass + `"`)
+
+	shell := `mvn compile exec:java -Dexec.mainClass="` + e.config.MainClass + `"`
+	if e.config.BuildTool == "gradle" {
+		shell = "gradle -q run"
+	}
+
+	cmd, stdout, stderr, err := utils.StartCmd(shell)
 	if err != nil {
 		return err
 	}
