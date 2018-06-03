@@ -115,6 +115,7 @@ func CreateReloadConf(cfg *BaseConfig) {
 	PrintLine(confPath)
 }
 
+// WriteCommon write common files
 func WriteCommon(cfg *BaseConfig) {
 	appDir := cfg.Name
 

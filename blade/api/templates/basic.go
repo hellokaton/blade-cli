@@ -394,6 +394,7 @@ paket-files/
 !.vscode/extensions.json
 `
 
+// TplGradleBuild build.gradle
 const TplGradleBuild = `plugins {
     id 'java'
     id 'idea'
@@ -470,4 +471,5 @@ task copyResources(type: Copy) {
 task release(type: Copy, dependsOn: [build, clearJar, copyJar, copyResources])
 `
 
+// TplGradleSetting setting.gradle
 const TplGradleSetting = `rootProject.name = '{{ .Name }}'`
