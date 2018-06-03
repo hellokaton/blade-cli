@@ -17,6 +17,8 @@ type BaseConfig struct {
 	Name        string `cli:"-"`
 	PackageName string
 	Version     string
+	RenderType  string
+	BuildTool   string
 }
 
 type maker func(*cli.Context, BaseConfig) error
@@ -32,13 +34,13 @@ func register(tool string, fn maker) bool {
 }
 
 // New new application
-func New(tool string, ctx *cli.Context, cfg BaseConfig) error {
+func New(ctx *cli.Context, cfg BaseConfig) error {
 	clr := ctx.Color()
 	moe := moe.New(clr.Bold("creating project, please wait...")).Spinner("dots3").Color(moe.Green).Start()
 
-	fn, ok := templatesMap[tool]
+	fn, ok := templatesMap[cfg.BuildTool]
 	if !ok {
-		return fmt.Errorf("unsupported template type %s", clr.Yellow(tool))
+		return fmt.Errorf("unsupported template type %s", clr.Yellow(cfg.BuildTool))
 	}
 	err := fn(ctx, cfg)
 	moe.Stop()

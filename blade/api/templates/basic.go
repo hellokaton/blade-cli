@@ -16,7 +16,6 @@ const TplPom = `<?xml version="1.0" encoding="UTF-8"?>
         <maven.compiler.target>1.8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <blade-mvc.version>{{ .BladeVersion }}</blade-mvc.version>
-        <jetbrick.version>{{ .JetbrickVersion }}</jetbrick.version>
         <junit.version>4.12</junit.version>
         <unirest-java.version>1.4.9</unirest-java.version>
     </properties>
@@ -27,17 +26,14 @@ const TplPom = `<?xml version="1.0" encoding="UTF-8"?>
             <artifactId>blade-mvc</artifactId>
             <version>${blade-mvc.version}</version>
         </dependency>
-        <dependency>
-            <groupId>com.bladejava</groupId>
-            <artifactId>blade-template-jetbrick</artifactId>
-            <version>${jetbrick.version}</version>
-        </dependency>
+        {{ .JetbrickDependency }}
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
+
         <dependency>
             <groupId>com.mashape.unirest</groupId>
             <artifactId>unirest-java</artifactId>

@@ -30,20 +30,27 @@ func New() *cli.Command {
 			}
 			fmt.Println("")
 
-			aa := &survey.Select{
-				Message: "choose a build tool:",
+			buildPrompt := &survey.Select{
+				Message: "select the build tool:",
 				Options: []string{"Maven", "Gradle"},
 			}
-			survey.AskOne(aa, &argv.BuildTool, nil)
+			survey.AskOne(buildPrompt, &argv.BuildTool, nil)
 			fmt.Println("")
-			return templates.New(argv.BuildTool, ctx, argv.BaseConfig)
+
+			renderPrompt := &survey.Select{
+				Message: "select the type of site you built:",
+				Options: []string{"Web Application", "Restful API"},
+			}
+			survey.AskOne(renderPrompt, &argv.RenderType, nil)
+			fmt.Println("")
+
+			return templates.New(ctx, argv.BaseConfig)
 		},
 	}
 }
 
 type newT struct {
 	cli.Helper
-	BuildTool string
 	templates.BaseConfig
 }
 

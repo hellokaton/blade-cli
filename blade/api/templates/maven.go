@@ -17,10 +17,14 @@ func Maven(ctx *cli.Context, cfg BaseConfig) error {
 
 	param := make(map[string]string)
 	param["BladeVersion"] = GetRepoLatestVersion("blade-mvc", "2.0.8-R1")
-	param["JetbrickVersion"] = GetRepoLatestVersion("blade-template-jetbrick", "0.1.3")
 	param["AppName"] = cfg.Name
 	param["PackageName"] = cfg.PackageName
 	param["Version"] = cfg.Version
+	if cfg.RenderType == "Web Application" {
+		param["JetbrickDependency"] = GetTplDependency()
+	} else {
+		param["JetbrickDependency"] = ""
+	}
 
 	// create dir
 	if err := os.Mkdir(appDir, 0755); err != nil {
@@ -48,17 +52,14 @@ func Maven(ctx *cli.Context, cfg BaseConfig) error {
 	// create java、resources dir
 	packagePath := appDir + "/src/main/java/" + strings.Replace(cfg.PackageName, ".", "/", -1)
 	controllerPath := packagePath + "/controller"
-	templatePath := appDir + "/src/main/resources/templates"
 
 	applicationPath := packagePath + "/Application.java"
 	indexController := controllerPath + "/IndexController.java"
-	indexHTML := templatePath + "/index.html"
 	appProperties := appDir + "/src/main/resources/app.properties"
 
 	os.MkdirAll(packagePath, os.ModePerm)
 	os.Mkdir(controllerPath, os.ModePerm)
 	os.MkdirAll(appDir+"/src/test/java", os.ModePerm)
-	os.MkdirAll(templatePath, os.ModePerm)
 	os.Mkdir(appDir+"/src/main/resources/static", os.ModePerm)
 
 	// app.properties
@@ -67,19 +68,25 @@ func Maven(ctx *cli.Context, cfg BaseConfig) error {
 		PrintLine(appProperties)
 	}
 
-	// 创建模板文件
-	if flag, _ := utils.Exists(indexHTML); !flag {
-		utils.WriteFile(indexHTML, TplIndexHTML)
-		PrintLine(indexHTML)
+	if cfg.RenderType == "Web Application" {
+		templatePath := appDir + "/src/main/resources/templates"
+		indexHTML := templatePath + "/index.html"
+		os.MkdirAll(templatePath, os.ModePerm)
+
+		// create template file
+		if flag, _ := utils.Exists(indexHTML); !flag {
+			utils.WriteFile(indexHTML, TplIndexHTML)
+			PrintLine(indexHTML)
+		}
 	}
 
-	// 创建运行类
+	// create Application
 	if flag, _ := utils.Exists(applicationPath); !flag {
 		utils.WriteTemplate("tpl_application", applicationPath, TplApplication, param)
 		PrintLine(applicationPath)
 	}
 
-	// 创建控制器
+	// create controller
 	if flag, _ := utils.Exists(indexController); !flag {
 		utils.WriteTemplate("tpl_controller", indexController, TplController, param)
 		PrintLine(indexController)
@@ -87,4 +94,12 @@ func Maven(ctx *cli.Context, cfg BaseConfig) error {
 
 	fmt.Println("")
 	return nil
+}
+
+func GetTplDependency() string {
+	return `<dependency>
+			<groupId>com.bladejava</groupId>
+			<artifactId>blade-template-jetbrick</artifactId>
+			<version>` + GetRepoLatestVersion("blade-template-jetbrick", "0.1.3") + `</version>
+		</dependency>`
 }
