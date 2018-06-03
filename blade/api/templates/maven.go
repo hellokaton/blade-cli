@@ -3,7 +3,6 @@ package templates
 import (
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/biezhi/blade-cli/blade/utils"
 	"github.com/mkideal/cli"
@@ -12,7 +11,7 @@ import (
 var _ = register("Maven", Maven)
 
 // Maven create maven application
-func Maven(ctx *cli.Context, cfg BaseConfig) error {
+func Maven(ctx *cli.Context, cfg *BaseConfig) error {
 	appDir := cfg.Name
 
 	param := make(map[string]string)
@@ -21,9 +20,10 @@ func Maven(ctx *cli.Context, cfg BaseConfig) error {
 	param["PackageName"] = cfg.PackageName
 	param["Version"] = cfg.Version
 	param["BuildTool"] = "maven"
+	param["RenderType"] = cfg.RenderType
 
 	if cfg.RenderType == "Web Application" {
-		param["TplDependency"] = getTplDependency()
+		param["TplDependency"] = getMavenDependency()
 	} else {
 		param["TplDependency"] = ""
 	}
@@ -41,64 +41,14 @@ func Maven(ctx *cli.Context, cfg BaseConfig) error {
 	}
 
 	packageXML := appDir + "/package.xml"
-
 	utils.WriteFile(packageXML, TplPackageXML)
 	PrintLine(packageXML)
 
-	CreateReloadConf(param)
-
-	gitignorePath := appDir + "/.gitignore"
-	utils.WriteFile(gitignorePath, TplGitignore)
-	PrintLine(gitignorePath)
-
-	// create java、resources dir
-	packagePath := appDir + "/src/main/java/" + strings.Replace(cfg.PackageName, ".", "/", -1)
-	controllerPath := packagePath + "/controller"
-
-	applicationPath := packagePath + "/Application.java"
-	indexController := controllerPath + "/IndexController.java"
-	appProperties := appDir + "/src/main/resources/app.properties"
-
-	os.MkdirAll(packagePath, os.ModePerm)
-	os.MkdirAll(controllerPath, os.ModePerm)
-	os.MkdirAll(appDir+"/src/test/java", os.ModePerm)
-	os.MkdirAll(appDir+"/src/main/resources/static", os.ModePerm)
-
-	// app.properties
-	if flag, _ := utils.Exists(appProperties); !flag {
-		utils.WriteFile(appProperties, TplAppProperties)
-		PrintLine(appProperties)
-	}
-
-	if cfg.RenderType == "Web Application" {
-		templatePath := appDir + "/src/main/resources/templates"
-		indexHTML := templatePath + "/index.html"
-		os.MkdirAll(templatePath, os.ModePerm)
-
-		// create template file
-		if flag, _ := utils.Exists(indexHTML); !flag {
-			utils.WriteFile(indexHTML, TplIndexHTML)
-			PrintLine(indexHTML)
-		}
-	}
-
-	// create Application
-	if flag, _ := utils.Exists(applicationPath); !flag {
-		utils.WriteTemplate("tpl_application", applicationPath, TplApplication, param)
-		PrintLine(applicationPath)
-	}
-
-	// create controller
-	if flag, _ := utils.Exists(indexController); !flag {
-		utils.WriteTemplate("tpl_controller", indexController, TplController, param)
-		PrintLine(indexController)
-	}
-
-	fmt.Println("")
+	WriteCommon(cfg)
 	return nil
 }
 
-func getTplDependency() string {
+func getMavenDependency() string {
 	return `<dependency>
 			<groupId>com.bladejava</groupId>
 			<artifactId>blade-template-jetbrick</artifactId>

@@ -58,9 +58,13 @@ Commands:
 » blade new hello
 ? please input package name (e.g: com.bladejava.example): com.bladedemo.hello
 
-? choose a build tool:  [Use arrows to move, type to filter]
+? select the build tool:  [Use arrows to move, type to filter]
 ❯ Maven
   Gradle
+
+? select the type of site you built:  [Use arrows to move, type to filter]
+❯ Web Application
+  Restful API
 
 ⠳ creating project, please wait...
 

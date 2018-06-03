@@ -126,7 +126,6 @@ func (e *Engine) watching(root string) error {
 					case <-e.watcherStopCh:
 						return
 					case ev := <-e.watcher.Events:
-						log.Printf("event: %+v", ev)
 						if !e.isIncludeExt(ev.Name) {
 							break
 						}

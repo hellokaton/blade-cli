@@ -198,6 +198,24 @@ public class Application {
 
 }`
 
+// TplBootstrap bootstrap config
+const TplBootstrap = `package {{ .PackageName }}.config;
+
+import com.blade.Blade;
+import com.blade.event.BeanProcessor;
+import com.blade.ioc.annotation.Bean;
+import com.blade.mvc.view.template.JetbrickTemplateEngine;
+
+@Bean
+public class Bootstrap implements BeanProcessor {
+    
+    @Override
+    public void processor(Blade blade) {
+        blade.templateEngine(new JetbrickTemplateEngine());
+    }
+
+}`
+
 // TplController controller file
 const TplController = `
 package {{ .PackageName }}.controller;

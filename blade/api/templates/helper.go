@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
+	"strings"
 
 	"github.com/biezhi/blade-cli/blade/utils"
 	"github.com/biezhi/moe"
@@ -14,14 +16,16 @@ import (
 
 // BaseConfig base config
 type BaseConfig struct {
-	Name        string `cli:"-"`
-	PackageName string
-	Version     string
-	RenderType  string
-	BuildTool   string
+	Name          string `cli:"-"`
+	PackageName   string
+	Version       string
+	RenderType    string
+	BuildTool     string
+	BladeVersion  string
+	TplDependency string
 }
 
-type maker func(*cli.Context, BaseConfig) error
+type maker func(*cli.Context, *BaseConfig) error
 
 var templatesMap = make(map[string]maker)
 
@@ -42,7 +46,7 @@ func New(ctx *cli.Context, cfg BaseConfig) error {
 	if !ok {
 		return fmt.Errorf("unsupported template type %s", clr.Yellow(cfg.BuildTool))
 	}
-	err := fn(ctx, cfg)
+	err := fn(ctx, &cfg)
 	moe.Stop()
 	if err == nil {
 		fmt.Printf("application %s create successful!\n", cfg.Name)
@@ -92,14 +96,14 @@ type BladeConf struct {
 }
 
 // CreateReloadConf create reload config file
-func CreateReloadConf(param map[string]string) {
-	confPath := param["AppName"] + "/.blade"
+func CreateReloadConf(cfg *BaseConfig) {
+	confPath := cfg.Name + "/.blade"
 
 	conf := &BladeConf{
-		PackageName:    param["PackageName"],
-		AppName:        param["AppName"],
-		MainClass:      param["PackageName"] + ".Application",
-		BuildTool:      param["BuildTool"],
+		PackageName:    cfg.PackageName,
+		AppName:        cfg.Name,
+		MainClass:      cfg.PackageName + ".Application",
+		BuildTool:      cfg.BuildTool,
 		StartDelay:     5,
 		Interval:       3,
 		LastModifyTime: 100,
@@ -109,4 +113,66 @@ func CreateReloadConf(param map[string]string) {
 
 	utils.WriteFile(confPath, string(content))
 	PrintLine(confPath)
+}
+
+func WriteCommon(cfg *BaseConfig) {
+	appDir := cfg.Name
+
+	CreateReloadConf(cfg)
+
+	gitignorePath := appDir + "/.gitignore"
+	utils.WriteFile(gitignorePath, TplGitignore)
+	PrintLine(gitignorePath)
+
+	// create java、resources dir
+	packagePath := appDir + "/src/main/java/" + strings.Replace(cfg.PackageName, ".", "/", -1)
+	configPath := packagePath + "/config"
+	controllerPath := packagePath + "/controller"
+
+	applicationPath := packagePath + "/Application.java"
+	bootstrapPath := configPath + "/Bootstrap.java"
+	indexController := controllerPath + "/IndexController.java"
+	appProperties := appDir + "/src/main/resources/app.properties"
+
+	os.MkdirAll(packagePath, os.ModePerm)
+	os.MkdirAll(controllerPath, os.ModePerm)
+	os.MkdirAll(appDir+"/src/test/java", os.ModePerm)
+	os.MkdirAll(appDir+"/src/main/resources/static", os.ModePerm)
+
+	// app.properties
+	if flag, _ := utils.Exists(appProperties); !flag {
+		utils.WriteFile(appProperties, TplAppProperties)
+		PrintLine(appProperties)
+	}
+
+	if cfg.RenderType == "Web Application" {
+		templatePath := appDir + "/src/main/resources/templates"
+		indexHTML := templatePath + "/index.html"
+		os.MkdirAll(templatePath, os.ModePerm)
+
+		// create template file
+		if flag, _ := utils.Exists(indexHTML); !flag {
+			utils.WriteFile(indexHTML, TplIndexHTML)
+			PrintLine(indexHTML)
+		}
+	}
+
+	// create Application
+	if flag, _ := utils.Exists(applicationPath); !flag {
+		utils.WriteTemplate("tpl_application", applicationPath, TplApplication, cfg)
+		PrintLine(applicationPath)
+	}
+
+	// create Bootstrap
+	if flag, _ := utils.Exists(bootstrapPath); !flag {
+		utils.WriteTemplate("tpl_bootstrap", bootstrapPath, TplBootstrap, cfg)
+		PrintLine(applicationPath)
+	}
+
+	// create controller
+	if flag, _ := utils.Exists(indexController); !flag {
+		utils.WriteTemplate("tpl_controller", indexController, TplController, cfg)
+		PrintLine(indexController)
+	}
+	fmt.Println("")
 }

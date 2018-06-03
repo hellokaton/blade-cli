@@ -44,6 +44,8 @@ func New() *cli.Command {
 			survey.AskOne(renderPrompt, &argv.RenderType, nil)
 			fmt.Println("")
 
+			argv.BladeVersion = templates.GetRepoLatestVersion("blade-mvc", "2.0.8-R1")
+
 			return templates.New(ctx, argv.BaseConfig)
 		},
 	}
