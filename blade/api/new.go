@@ -44,7 +44,14 @@ func New() *cli.Command {
 			survey.AskOne(renderPrompt, &argv.RenderType, nil)
 			fmt.Println("")
 
-			argv.BladeVersion = templates.GetRepoLatestVersion("blade-mvc", "2.0.8-R1")
+			dbPrompt := &survey.Select{
+				Message: "used database?",
+				Options: []string{"No database", "MySQL"},
+			}
+			survey.AskOne(dbPrompt, &argv.DBType, nil)
+			fmt.Println("")
+
+			argv.BladeVersion = templates.GetRepoLatestVersion("com.bladejava", "blade-mvc", "2.0.8-R1")
 
 			return templates.New(ctx, argv.BaseConfig)
 		},

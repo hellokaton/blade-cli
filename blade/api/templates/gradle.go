@@ -14,9 +14,15 @@ var _ = register("Gradle", Gradle)
 func Gradle(ctx *cli.Context, cfg *BaseConfig) error {
 	appDir := cfg.Name
 	if cfg.RenderType == "Web Application" {
-		cfg.TplDependency = gradleTplDependency()
+		cfg.TplDependency = getGradleTplDependency()
 	} else {
 		cfg.TplDependency = ""
+	}
+
+	if cfg.DBType == "MySQL" {
+		cfg.MySQLDependency = getGradleMySQLDependency()
+	} else {
+		cfg.MySQLDependency = ""
 	}
 
 	// create dir
@@ -41,7 +47,13 @@ func Gradle(ctx *cli.Context, cfg *BaseConfig) error {
 	return nil
 }
 
-func gradleTplDependency() string {
-	return `compile 'com.bladejava:blade-template-jetbrick:` + GetRepoLatestVersion("blade-template-jetbrick", "0.1.3") + `'
+func getGradleTplDependency() string {
+	return `compile 'com.bladejava:blade-template-jetbrick:` + GetRepoLatestVersion("com.bladejava", "blade-template-jetbrick", "0.1.3") + `'
 	`
+}
+
+func getGradleMySQLDependency() string {
+	return `compile 'mysql:mysql-connector-java:5.1.46'
+	 		compile 'io.github.biezhi:anima:` + GetRepoLatestVersion("io.github.biezhi", "anima", "0.2.2") + `'
+	 		compile 'com.alibaba:druid:1.1.10'`
 }

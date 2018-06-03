@@ -15,9 +15,15 @@ func Maven(ctx *cli.Context, cfg *BaseConfig) error {
 	appDir := cfg.Name
 
 	if cfg.RenderType == "Web Application" {
-		cfg.TplDependency = getMavenDependency()
+		cfg.TplDependency = getMavenTplDependency()
 	} else {
 		cfg.TplDependency = ""
+	}
+
+	if cfg.DBType == "MySQL" {
+		cfg.MySQLDependency = getMavenMySQLDependency()
+	} else {
+		cfg.MySQLDependency = ""
 	}
 
 	// create dir
@@ -40,10 +46,29 @@ func Maven(ctx *cli.Context, cfg *BaseConfig) error {
 	return nil
 }
 
-func getMavenDependency() string {
+func getMavenTplDependency() string {
 	return `<dependency>
 			<groupId>com.bladejava</groupId>
 			<artifactId>blade-template-jetbrick</artifactId>
-			<version>` + GetRepoLatestVersion("blade-template-jetbrick", "0.1.3") + `</version>
+			<version>` + GetRepoLatestVersion("com.bladejava", "blade-template-jetbrick", "0.1.3") + `</version>
 		</dependency>`
+}
+
+func getMavenMySQLDependency() string {
+	return `<dependency>
+			<groupId>mysql</groupId>
+			<artifactId>mysql-connector-java</artifactId>
+			<version>5.1.46</version>
+		</dependency>
+		<dependency>
+            <groupId>io.github.biezhi</groupId>
+            <artifactId>anima</artifactId>
+            <version>` + GetRepoLatestVersion("io.github.biezhi", "anima", "0.2.2") + `</version>
+		</dependency>
+		<dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>druid</artifactId>
+            <version>1.1.10</version>
+        </dependency>
+		`
 }

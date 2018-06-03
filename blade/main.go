@@ -8,7 +8,11 @@ import (
 	"github.com/mkideal/cli"
 )
 
+// BladeCliVersion blade cli version
 const BladeCliVersion = "v0.0.1"
+
+type App struct {
+}
 
 // root command
 type rootT struct {
@@ -48,6 +52,7 @@ func main() {
 		cli.Tree(api.New()),
 		cli.Tree(api.Serve()),
 		cli.Tree(api.Build()),
+		cli.Tree(api.Generator()),
 	).Run(os.Args[1:]); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)

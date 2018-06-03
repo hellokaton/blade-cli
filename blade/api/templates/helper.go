@@ -16,13 +16,15 @@ import (
 
 // BaseConfig base config
 type BaseConfig struct {
-	Name          string `cli:"-"`
-	PackageName   string
-	Version       string
-	RenderType    string
-	BuildTool     string
-	BladeVersion  string
-	TplDependency string
+	Name            string `cli:"-"`
+	PackageName     string
+	Version         string
+	RenderType      string
+	DBType          string
+	BuildTool       string
+	BladeVersion    string
+	TplDependency   string
+	MySQLDependency string
 }
 
 type maker func(*cli.Context, *BaseConfig) error
@@ -62,8 +64,8 @@ func PrintLine(message string) {
 }
 
 // GetRepoLatestVersion get repo latest version
-func GetRepoLatestVersion(artifactID, defaultVersion string) string {
-	resp, err := http.Get("http://search.maven.org/solrsearch/select?q=g:%20com.bladejava%20+AND+a:%20" + artifactID + "%20&rows=1&wt=json")
+func GetRepoLatestVersion(groupId, artifactID, defaultVersion string) string {
+	resp, err := http.Get("http://search.maven.org/solrsearch/select?q=g:%20" + groupId + "%20+AND+a:%20" + artifactID + "%20&rows=1&wt=json")
 	if err != nil {
 		fmt.Println(err)
 		return defaultVersion
@@ -143,7 +145,7 @@ func WriteCommon(cfg *BaseConfig) {
 
 	// app.properties
 	if flag, _ := utils.Exists(appProperties); !flag {
-		utils.WriteFile(appProperties, TplAppProperties)
+		utils.WriteTemplate("tpl_properties", appProperties, TplAppProperties, cfg)
 		PrintLine(appProperties)
 	}
 

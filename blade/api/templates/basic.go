@@ -33,7 +33,7 @@ const TplPom = `<?xml version="1.0" encoding="UTF-8"?>
             <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
-
+        {{ .MySQLDependency }}
         <dependency>
             <groupId>com.mashape.unirest</groupId>
             <artifactId>unirest-java</artifactId>
@@ -180,10 +180,20 @@ const TplPackageXML = `<assembly xmlns="http://maven.apache.org/plugins/maven-as
 </assembly>`
 
 // TplAppProperties app.properties
-const TplAppProperties = `app.version=0.0.1
+const TplAppProperties = `app.version = 0.0.1
+app.name = {{ .Name }}
+server.port = 9000
 
+{{if ne .MySQLDependency ""}}
+jdbc.url = jdbc:mysql://127.0.0.1:3306/YOUR_DB_NAME?useUnicode=true&characterEncoding=utf-8&useSSL=false&autoReconnect=true
+jdbc.username = root
+jdbc.password = 123456
+{{end}}
 # log
-com.blade.logger.logFile=./logs/app.log`
+com.blade.logger.logFile = ./logs/{{ .Name }}.log{{if ne .MySQLDependency ""}}
+com.blade.logger.org.sql2o = debug
+{{end}}
+`
 
 // TplApplication main java file
 const TplApplication = `package {{ .PackageName }};
@@ -202,9 +212,12 @@ public class Application {
 const TplBootstrap = `package {{ .PackageName }}.config;
 
 import com.blade.Blade;
+import com.blade.Environment;
 import com.blade.event.BeanProcessor;
 import com.blade.ioc.annotation.Bean;{{if ne .TplDependency ""}}
-import com.blade.mvc.view.template.JetbrickTemplateEngine;{{end}}
+import com.blade.mvc.view.template.JetbrickTemplateEngine;{{end}}{{if ne .MySQLDependency ""}}
+import io.github.biezhi.anima.Anima;
+import com.alibaba.druid.pool.DruidDataSource;{{end}}
 
 @Bean
 public class Bootstrap implements BeanProcessor {
@@ -213,6 +226,15 @@ public class Bootstrap implements BeanProcessor {
     public void processor(Blade blade) {
         {{if ne .TplDependency ""}}
         blade.templateEngine(new JetbrickTemplateEngine());{{end}}
+        {{if ne .MySQLDependency ""}}
+        // JDBC
+        DruidDataSource dataSource = new DruidDataSource();
+        dataSource.setDriverClassName("com.mysql.jdbc.Driver");
+        dataSource.setUrl(blade.environment().getOrNull("jdbc.url"));
+        dataSource.setUsername(blade.environment().getOrNull("jdbc.username"));
+        dataSource.setPassword(blade.environment().getOrNull("jdbc.password"));
+
+        Anima.open(dataSource);{{end}}
     }
 
 }`

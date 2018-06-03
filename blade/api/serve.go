@@ -25,7 +25,7 @@ func Serve() *cli.Command {
 		Desc:        "start blade application",
 		CanSubRoute: true,
 		Fn: func(ctx *cli.Context) error {
-			e, err := NewEngine()
+			s, err := NewServe()
 			if err != nil {
 				return err
 			}
@@ -33,16 +33,16 @@ func Serve() *cli.Command {
 			signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 			go func() {
 				<-sigs
-				e.Stop()
+				s.Stop()
 			}()
-			e.Run()
+			s.Run()
 			return nil
 		},
 	}
 }
 
-// Engine blade serve engine
-type Engine struct {
+// BladeServe blade serve engine
+type BladeServe struct {
 	config  *templates.BladeConf
 	watcher *fsnotify.Watcher
 
@@ -60,8 +60,8 @@ type Engine struct {
 	ll sync.Mutex // lock for logger
 }
 
-// NewEngine ...
-func NewEngine() (*Engine, error) {
+// NewServe ...
+func NewServe() (*BladeServe, error) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return nil, err
@@ -73,7 +73,7 @@ func NewEngine() (*Engine, error) {
 		return nil, err
 	}
 
-	return &Engine{
+	return &BladeServe{
 		config:         &conf,
 		watcher:        watcher,
 		eventCh:        make(chan string, 1000),
@@ -87,17 +87,17 @@ func NewEngine() (*Engine, error) {
 	}, nil
 }
 
-// Run run run
-func (e *Engine) Run() {
+// Run run
+func (s *BladeServe) Run() {
 	var err error
-	if err = e.watching("src/main"); err != nil {
+	if err = s.watching("src/main"); err != nil {
 		os.Exit(1)
 	}
-	e.start()
-	e.cleanup()
+	s.start()
+	s.cleanup()
 }
 
-func (e *Engine) watching(root string) error {
+func (s *BladeServe) watching(root string) error {
 	return filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
 		if info.IsDir() {
 			path, err := filepath.Abs(path)
@@ -105,33 +105,33 @@ func (e *Engine) watching(root string) error {
 				return err
 			}
 
-			err = e.watcher.Add(path)
+			err = s.watcher.Add(path)
 			if err != nil {
 				return err
 			}
 			// log.Printf("watching %s", path)
 
 			go func() {
-				e.withLock(func() {
-					e.watchers++
+				s.withLock(func() {
+					s.watchers++
 				})
 				defer func() {
-					e.withLock(func() {
-						e.watchers--
+					s.withLock(func() {
+						s.watchers--
 					})
 				}()
 
 				for {
 					select {
-					case <-e.watcherStopCh:
+					case <-s.watcherStopCh:
 						return
-					case ev := <-e.watcher.Events:
-						if !e.isIncludeExt(ev.Name) {
+					case ev := <-s.watcher.Events:
+						if !s.isIncludeExt(ev.Name) {
 							break
 						}
 						log.Printf("%s has changed", ev.Name)
-						e.eventCh <- ev.Name
-					case err := <-e.watcher.Errors:
+						s.eventCh <- ev.Name
+					case err := <-s.watcher.Errors:
 						log.Printf("error: %s", err.Error())
 					}
 				}
@@ -142,7 +142,7 @@ func (e *Engine) watching(root string) error {
 }
 
 // Endless loop and never return
-func (e *Engine) start() {
+func (s *BladeServe) start() {
 	firstRunCh := make(chan bool, 1)
 	firstRunCh <- true
 
@@ -150,12 +150,12 @@ func (e *Engine) start() {
 		var filename string
 
 		select {
-		case <-e.exitCh:
+		case <-s.exitCh:
 			return
-		case filename = <-e.eventCh:
+		case filename = <-s.eventCh:
 			// time.Sleep(e.config.d())
-			e.flushEvents()
-			if !e.isIncludeExt(filename) {
+			s.flushEvents()
+			if !s.isIncludeExt(filename) {
 				continue
 			}
 			log.Printf("%s has changed", filename)
@@ -165,40 +165,40 @@ func (e *Engine) start() {
 		}
 
 		select {
-		case <-e.buildRunCh:
-			e.buildRunStopCh <- true
+		case <-s.buildRunCh:
+			s.buildRunStopCh <- true
 		default:
 		}
-		e.withLock(func() {
-			if e.binRunning {
-				e.binStopCh <- true
+		s.withLock(func() {
+			if s.binRunning {
+				s.binStopCh <- true
 			}
 		})
-		go e.buildRun()
+		go s.buildRun()
 	}
 }
 
-func (e *Engine) buildRun() {
-	e.buildRunCh <- true
+func (s *BladeServe) buildRun() {
+	s.buildRunCh <- true
 
 	select {
-	case <-e.buildRunStopCh:
+	case <-s.buildRunStopCh:
 		return
 	default:
 	}
 
-	err := e.runBin()
+	err := s.runBin()
 	if err != nil {
 		log.Printf("failed to run, error: %s", err.Error())
 	}
 
-	<-e.buildRunCh
+	<-s.buildRunCh
 }
 
-func (e *Engine) flushEvents() {
+func (s *BladeServe) flushEvents() {
 	for {
 		select {
-		case <-e.eventCh:
+		case <-s.eventCh:
 			log.Printf("flushing events")
 		default:
 			return
@@ -206,12 +206,12 @@ func (e *Engine) flushEvents() {
 	}
 }
 
-func (e *Engine) runBin() error {
+func (s *BladeServe) runBin() error {
 	var err error
 	log.Println("running...")
 
-	shell := `mvn compile exec:java -Dexec.mainClass="` + e.config.MainClass + `"`
-	if e.config.BuildTool == "gradle" {
+	shell := `mvn compile exec:java -Dexec.mainClass="` + s.config.MainClass + `"`
+	if s.config.BuildTool == "gradle" {
 		shell = "gradle -q run"
 	}
 
@@ -219,15 +219,15 @@ func (e *Engine) runBin() error {
 	if err != nil {
 		return err
 	}
-	e.withLock(func() {
-		e.binRunning = true
+	s.withLock(func() {
+		s.binRunning = true
 	})
 
 	go io.Copy(os.Stderr, stderr)
 	go io.Copy(os.Stdout, stdout)
 
 	go func(cmd *exec.Cmd) {
-		<-e.binStopCh
+		<-s.binStopCh
 		log.Printf("trying to kill cmd %+v", cmd.Args)
 		pid, err := utils.KillCmd(cmd)
 		if err != nil {
@@ -238,49 +238,49 @@ func (e *Engine) runBin() error {
 		} else {
 			log.Printf("cmd killed, pid: %d", pid)
 		}
-		e.withLock(func() {
-			e.binRunning = false
+		s.withLock(func() {
+			s.binRunning = false
 		})
 	}(cmd)
 	return nil
 }
 
-func (e *Engine) cleanup() {
+func (s *BladeServe) cleanup() {
 	log.Println("cleaning...")
 	defer log.Println("see you again~")
 
-	e.withLock(func() {
-		if e.binRunning {
-			e.binStopCh <- true
+	s.withLock(func() {
+		if s.binRunning {
+			s.binStopCh <- true
 		}
 	})
 
-	e.withLock(func() {
-		for i := 0; i < int(e.watchers); i++ {
-			e.watcherStopCh <- true
+	s.withLock(func() {
+		for i := 0; i < int(s.watchers); i++ {
+			s.watcherStopCh <- true
 		}
 	})
 
 	var err error
-	if err = e.watcher.Close(); err != nil {
+	if err = s.watcher.Close(); err != nil {
 		log.Printf("failed to close watcher, error: %s", err.Error())
 	}
 }
 
 // Stop the air
-func (e *Engine) Stop() {
-	e.exitCh <- true
+func (s *BladeServe) Stop() {
+	s.exitCh <- true
 }
 
-func (e *Engine) withLock(f func()) {
-	e.mu.Lock()
+func (s *BladeServe) withLock(f func()) {
+	s.mu.Lock()
 	f()
-	e.mu.Unlock()
+	s.mu.Unlock()
 }
 
-func (e *Engine) isIncludeExt(path string) bool {
+func (s *BladeServe) isIncludeExt(path string) bool {
 	ext := filepath.Ext(path)
-	for _, v := range e.config.IncludeExt {
+	for _, v := range s.config.IncludeExt {
 		if ext == "."+strings.TrimSpace(v) {
 			return true
 		}
